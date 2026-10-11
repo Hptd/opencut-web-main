@@ -1,0 +1,298 @@
+"use client";
+
+import { Button } from "../ui/button";
+import { useRef, useState } from "react";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { RenameProjectDialog } from "@/project/components/rename-project-dialog";
+import { DeleteProjectDialog } from "@/project/components/delete-project-dialog";
+import { useRouter } from "next/navigation";
+import { ExportButton } from "./export-button";
+import { ThemeToggle } from "../theme-toggle";
+import { LanguageToggle } from "@/i18n";
+import { useTranslation } from "@/i18n";
+import { DEFAULT_LOGO_URL } from "@/site/brand";
+import { toast } from "sonner";
+import { useEditor } from "@/editor/use-editor";
+import { CommandIcon, Logout05Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ShortcutsDialog } from "@/actions/components/shortcuts-dialog";
+import Image from "next/image";
+import { cn } from "@/utils/ui";
+
+export function EditorHeader() {
+	return (
+		<header className="bg-background flex h-[3.4rem] items-center justify-between px-3 pt-0.5">
+			<div className="flex items-center gap-1">
+				<ProjectDropdown />
+				<EditableProjectName />
+			</div>
+			<nav className="flex items-center gap-2">
+				<SaveControls />
+				<ExportButton />
+				<LanguageToggle />
+				<ThemeToggle />
+			</nav>
+		</header>
+	);
+}
+
+function SaveControls() {
+	const editor = useEditor();
+	const router = useRouter();
+	const { t } = useTranslation();
+	const fileName = useEditor((e) => e.project.getFileName());
+	const { project } = editor;
+	const isSupported = project.isFileAccessSupported();
+	const [busy, setBusy] = useState(false);
+
+	const run = async (task: () => Promise<unknown>) => {
+		setBusy(true);
+		try {
+			await task();
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<>
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={busy || !isSupported}
+				onClick={() => run(() => project.saveToFile())}
+				title={
+					isSupported ? undefined : t("Saving needs a Chromium-based browser")
+				}
+			>
+				{fileName ? t("Save") : t("Save project")}
+			</Button>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						disabled={busy || !isSupported}
+						aria-label={t("Project file options")}
+					>
+						<HugeiconsIcon icon={MoreHorizontalIcon} />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-48">
+					<DropdownMenuItem onClick={() => run(() => project.saveAsToFile())}>
+						{t("Save as…")}
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() =>
+							run(async () => {
+								const id = await project.openProjectFile();
+								if (id) router.push(`/editor?project_id=${id}`);
+							})
+						}
+					>
+						{t("Open project…")}
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</>
+	);
+}
+
+function ProjectDropdown() {
+	const [openDialog, setOpenDialog] = useState<
+		"delete" | "rename" | "shortcuts" | null
+	>(null);
+	const [isExiting, setIsExiting] = useState(false);
+	const router = useRouter();
+	const editor = useEditor();
+	const { t } = useTranslation();
+	const activeProject = useEditor((e) => e.project.getActive());
+
+	const handleExit = async () => {
+		if (isExiting) return;
+		setIsExiting(true);
+
+		try {
+			await editor.project.prepareExit();
+			editor.project.closeProject();
+		} catch (error) {
+			console.error("Failed to prepare project exit:", error);
+		} finally {
+			editor.project.closeProject();
+			router.push("/projects");
+		}
+	};
+
+	const handleSaveProjectName = async (newName: string) => {
+		if (
+			activeProject &&
+			newName.trim() &&
+			newName !== activeProject.metadata.name
+		) {
+			try {
+				await editor.project.renameProject({
+					id: activeProject.metadata.id,
+					name: newName.trim(),
+				});
+			} catch (error) {
+				toast.error(t("Failed to rename project"), {
+					description:
+						error instanceof Error ? error.message : t("Please try again"),
+				});
+			} finally {
+				setOpenDialog(null);
+			}
+		}
+	};
+
+	const handleDeleteProject = async () => {
+		if (activeProject) {
+			try {
+				await editor.project.deleteProjects({
+					ids: [activeProject.metadata.id],
+				});
+				router.push("/projects");
+			} catch (error) {
+				toast.error(t("Failed to delete project"), {
+					description:
+						error instanceof Error ? error.message : t("Please try again"),
+				});
+			} finally {
+				setOpenDialog(null);
+			}
+		}
+	};
+
+	return (
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button variant="ghost" size="icon" className="p-1 rounded-sm size-8">
+						<Image
+							src={DEFAULT_LOGO_URL}
+							alt={t("Project thumbnail")}
+							width={32}
+							height={32}
+							className="invert dark:invert-0 size-5"
+						/>
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="start" className="z-100 w-44">
+					<DropdownMenuItem
+						onClick={handleExit}
+						disabled={isExiting}
+						icon={<HugeiconsIcon icon={Logout05Icon} />}
+					>
+						{t("Exit project")}
+					</DropdownMenuItem>
+
+					<DropdownMenuItem
+						onClick={() => setOpenDialog("shortcuts")}
+						icon={<HugeiconsIcon icon={CommandIcon} />}
+					>
+						{t("Shortcuts")}
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+			<RenameProjectDialog
+				isOpen={openDialog === "rename"}
+				onOpenChange={(isOpen) => setOpenDialog(isOpen ? "rename" : null)}
+				onConfirm={(newName) => handleSaveProjectName(newName)}
+				projectName={activeProject?.metadata.name || ""}
+			/>
+			<DeleteProjectDialog
+				isOpen={openDialog === "delete"}
+				onOpenChange={(isOpen) => setOpenDialog(isOpen ? "delete" : null)}
+				onConfirm={handleDeleteProject}
+				projectNames={[activeProject?.metadata.name || ""]}
+			/>
+			<ShortcutsDialog
+				isOpen={openDialog === "shortcuts"}
+				onOpenChange={(isOpen) => setOpenDialog(isOpen ? "shortcuts" : null)}
+			/>
+		</>
+	);
+}
+
+function EditableProjectName() {
+	const editor = useEditor();
+	const activeProject = useEditor((e) => e.project.getActive());
+	const { t } = useTranslation();
+	const [isEditing, setIsEditing] = useState(false);
+	const inputRef = useRef<HTMLInputElement>(null);
+	const originalNameRef = useRef("");
+
+	const projectName = activeProject?.metadata.name || "";
+
+	const startEditing = () => {
+		if (isEditing) return;
+		originalNameRef.current = projectName;
+		setIsEditing(true);
+
+		requestAnimationFrame(() => {
+			inputRef.current?.select();
+		});
+	};
+
+	const saveEdit = async () => {
+		if (!inputRef.current || !activeProject) return;
+		const newName = inputRef.current.value.trim();
+		setIsEditing(false);
+
+		if (!newName) {
+			inputRef.current.value = originalNameRef.current;
+			return;
+		}
+
+		if (newName !== originalNameRef.current) {
+			try {
+				await editor.project.renameProject({
+					id: activeProject.metadata.id,
+					name: newName,
+				});
+			} catch (error) {
+				toast.error(t("Failed to rename project"), {
+					description:
+						error instanceof Error ? error.message : t("Please try again"),
+				});
+			}
+		}
+	};
+
+	const handleKeyDown = (event: React.KeyboardEvent) => {
+		if (event.key === "Enter") {
+			event.preventDefault();
+			inputRef.current?.blur();
+		} else if (event.key === "Escape") {
+			event.preventDefault();
+			if (inputRef.current) {
+				inputRef.current.value = originalNameRef.current;
+				inputRef.current.setSelectionRange(0, 0);
+			}
+			setIsEditing(false);
+			inputRef.current?.blur();
+		}
+	};
+
+	return (
+		<input
+			ref={inputRef}
+			type="text"
+			defaultValue={projectName}
+			readOnly={!isEditing}
+			onClick={startEditing}
+			onBlur={saveEdit}
+			onKeyDown={handleKeyDown}
+			style={{ fieldSizing: "content" }}
+			className={cn(
+				"text-[0.9rem] h-8 px-2 py-1 rounded-sm bg-transparent outline-none cursor-pointer hover:bg-accent hover:text-accent-foreground",
+				isEditing && "ring-1 ring-ring cursor-text hover:bg-transparent",
+			)}
+		/>
+	);
+}
