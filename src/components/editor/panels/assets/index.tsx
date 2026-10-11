@@ -2,35 +2,26 @@
 
 import { Separator } from "@/components/ui/separator";
 import { type Tab, useAssetsPanelStore } from "@/components/editor/panels/assets/assets-panel-store";
-import { useTranslation } from "@/i18n";
 import { TabBar } from "./tabbar";
 import { Captions } from "@/subtitles/components/assets-view";
 import { MediaView } from "./views/assets";
 import { SettingsView } from "./views/settings";
 import { StickersView } from "@/stickers/components/assets-view";
 import { TextView } from "@/text/components/assets-view";
-import { EffectsView } from "@/effects/components/assets-view";
+import { EffectsView, AdjustmentsView } from "@/effects/components/assets-view";
+import { TransitionsView } from "@/transitions/components/assets-view";
 
 export function AssetsPanel() {
 	const { activeTab } = useAssetsPanelStore();
-	const { t } = useTranslation();
 
 	const viewMap: Record<Tab, React.ReactNode> = {
 		media: <MediaView />,
 		text: <TextView />,
 		stickers: <StickersView />,
 		effects: <EffectsView />,
-		transitions: (
-			<div className="text-muted-foreground p-4">
-				{t("Transitions view coming soon...")}
-			</div>
-		),
+		transitions: <TransitionsView />,
 		captions: <Captions />,
-		adjustment: (
-			<div className="text-muted-foreground p-4">
-				{t("Adjustment view coming soon...")}
-			</div>
-		),
+		adjustment: <AdjustmentsView />,
 		settings: <SettingsView />,
 	};
 

@@ -46,6 +46,7 @@ import {
 	RetimeKeyframeCommand,
 	UpdateScalarKeyframeCurveCommand,
 	AddClipEffectCommand,
+	ApplyTransitionCommand,
 	DeleteFreeformPathMaskPointsCommand,
 	InsertFreeformPathMaskPointCommand,
 	RemoveClipEffectCommand,
@@ -313,6 +314,26 @@ export class TimelineManager {
 		});
 		this.editor.command.execute({ command });
 		return command.getEffectId() ?? "";
+	}
+
+	applyTransition({
+		trackId,
+		elementId,
+		transitionType,
+		durationTicks,
+	}: {
+		trackId: string;
+		elementId: string;
+		transitionType: string;
+		durationTicks: MediaTime;
+	}): void {
+		const command = new ApplyTransitionCommand({
+			trackId,
+			elementId,
+			transitionType,
+			durationTicks,
+		});
+		this.editor.command.execute({ command });
 	}
 
 	removeClipEffect({

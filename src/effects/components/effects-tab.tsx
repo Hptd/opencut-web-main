@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { ParamValues } from "@/params";
+import type { ParamDefinition, ParamValue, ParamValues } from "@/params";
 import type { Effect } from "@/effects/types";
 import type { EffectElement, VisualElement } from "@/timeline";
 import { effectsRegistry } from "@/effects";
 import { useEditor } from "@/editor/use-editor";
 import { useElementPreview } from "@/timeline/hooks/use-element-preview";
+import { useElementPlayhead } from "@/components/editor/panels/properties/hooks/use-element-playhead";
+import { useKeyframedParamProperty } from "@/components/editor/panels/properties/hooks/use-keyframed-param-property";
+import {
+	buildEffectParamPath,
+	resolveAnimationPathValueAtTime,
+} from "@/animation";
 import {
 	Section,
 	SectionContent,
@@ -36,23 +42,18 @@ export function StandaloneEffectTab({
 	trackId: string;
 }) {
 	const { t } = useTranslation();
-	const { renderElement, previewUpdates, commit } = useElementPreview({
+	const { renderElement } = useElementPreview({
 		trackId,
 		elementId: element.id,
 		fallback: element,
 	});
 
+	const liveElement = renderElement as EffectElement;
 	const effect: Effect = {
 		id: element.id,
 		type: element.effectType,
-		params: element.params,
+		params: liveElement.params,
 		enabled: true,
-	};
-
-	const previewParam = (key: string) => (value: number | string | boolean) => {
-		previewUpdates({
-			params: { ...(renderElement as EffectElement).params, [key]: value },
-		});
 	};
 
 	return (
@@ -62,9 +63,10 @@ export function StandaloneEffectTab({
 			</div>
 			<EffectSection
 				effect={effect}
-				renderParams={(renderElement as EffectElement).params}
-				previewParam={previewParam}
-				onCommit={commit}
+				element={liveElement}
+				trackId={trackId}
+				renderParams={liveElement.params}
+				enableKeyframes
 			/>
 		</div>
 	);
@@ -80,37 +82,22 @@ export function ClipEffectsTab({
 	const { t } = useTranslation();
 	const [dragIndex, setDragIndex] = useState<number | null>(null);
 	const [dropIndex, setDropIndex] = useState<number | null>(null);
+	const [isExternalDropTarget, setIsExternalDropTarget] = useState(false);
 	const editor = useEditor();
-	const { renderElement, previewUpdates, commit } = useElementPreview({
+	const { renderElement } = useElementPreview({
 		trackId,
 		elementId: element.id,
 		fallback: element,
 	});
 
-	const effects: Effect[] = element.effects ?? [];
+	const liveElement = renderElement as VisualElement;
+	const effects: Effect[] = liveElement.effects ?? [];
 
 	const getRenderParams = ({ effectId }: { effectId: string }): ParamValues => {
 		return (
-			(renderElement as VisualElement).effects?.find((ef) => ef.id === effectId)
-				?.params ??
-			effects.find((ef) => ef.id === effectId)?.params ??
-			{}
+			liveElement.effects?.find((ef) => ef.id === effectId)?.params ?? {}
 		);
 	};
-
-	const buildPreviewParam =
-		(effectId: string) =>
-		(key: string) =>
-		(value: number | string | boolean) => {
-			const updatedEffects = (
-				(renderElement as VisualElement).effects ?? []
-			).map((existing) =>
-				existing.id !== effectId
-					? existing
-					: { ...existing, params: { ...existing.params, [key]: value } },
-			);
-			previewUpdates({ effects: updatedEffects });
-		};
 
 	const handleDragStart = ({ index }: { index: number }) => setDragIndex(index);
 
@@ -143,8 +130,50 @@ export function ClipEffectsTab({
 		setDropIndex(null);
 	};
 
+	// Accept effects dragged in from the Assets panel's Effects/Adjustment tabs.
+	const readDraggedEffect = (): string | null => {
+		const dragData = editor.timeline.dragSource.getActive();
+		if (!dragData || dragData.type !== "effect") return null;
+		if (!dragData.targetElementTypes.includes(element.type)) return null;
+		return dragData.effectType;
+	};
+
+	const handleExternalDragOver = (event: React.DragEvent) => {
+		if (!readDraggedEffect()) return;
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "copy";
+		if (!isExternalDropTarget) setIsExternalDropTarget(true);
+	};
+
+	const handleExternalDragLeave = (event: React.DragEvent) => {
+		if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+			return;
+		}
+		setIsExternalDropTarget(false);
+	};
+
+	const handleExternalDrop = (event: React.DragEvent) => {
+		const effectType = readDraggedEffect();
+		setIsExternalDropTarget(false);
+		if (!effectType) return;
+		event.preventDefault();
+		editor.timeline.addClipEffect({
+			trackId,
+			elementId: element.id,
+			effectType,
+		});
+	};
+
 	return (
-		<div className="flex flex-col h-full">
+		<div
+			className={cn(
+				"flex flex-col h-full",
+				isExternalDropTarget && "ring-primary ring-2 ring-inset rounded-sm",
+			)}
+			onDragOver={handleExternalDragOver}
+			onDragLeave={handleExternalDragLeave}
+			onDrop={handleExternalDrop}
+		>
 			<div className="border-b px-3.5 h-11 shrink-0 flex items-center">
 				<SectionTitle>{t("Effects")}</SectionTitle>
 			</div>
@@ -179,9 +208,10 @@ export function ClipEffectsTab({
 							>
 								<EffectSection
 									effect={effect}
+									element={liveElement}
+									trackId={trackId}
 									renderParams={getRenderParams({ effectId: effect.id })}
-									previewParam={buildPreviewParam(effect.id)}
-									onCommit={commit}
+									enableKeyframes
 									onToggle={() =>
 										editor.timeline.toggleClipEffect({
 											trackId,
@@ -236,16 +266,18 @@ function EmptyView() {
 
 function EffectSection({
 	effect,
+	element,
+	trackId,
 	renderParams,
-	previewParam,
-	onCommit,
+	enableKeyframes,
 	onToggle,
 	onRemove,
 }: {
 	effect: Effect;
+	element: VisualElement | EffectElement;
+	trackId: string;
 	renderParams: ParamValues;
-	previewParam: (key: string) => (value: number | string | boolean) => void;
-	onCommit: () => void;
+	enableKeyframes: boolean;
 	onToggle?: () => void;
 	onRemove?: () => void;
 }) {
@@ -295,20 +327,100 @@ function EffectSection({
 			>
 				<SectionFields>
 					{definition.params.map((param) => (
-						<div key={param.key} className="flex flex-col gap-3.5">
-							<div className="px-4">
-								<PropertyParamField
-									param={param}
-									value={renderParams[param.key] ?? param.default}
-									onPreview={previewParam(param.key)}
-									onCommit={onCommit}
-								/>
-							</div>
-							<Separator />
-						</div>
+						<EffectParamField
+							key={param.key}
+							effect={effect}
+							element={element}
+							trackId={trackId}
+							param={param}
+							fallbackValue={renderParams[param.key] ?? param.default}
+							enableKeyframes={enableKeyframes}
+						/>
 					))}
 				</SectionFields>
 			</SectionContent>
 		</Section>
+	);
+}
+
+function EffectParamField({
+	effect,
+	element,
+	trackId,
+	param,
+	fallbackValue,
+	enableKeyframes,
+}: {
+	effect: Effect;
+	element: VisualElement | EffectElement;
+	trackId: string;
+	param: ParamDefinition;
+	fallbackValue: ParamValue;
+	enableKeyframes: boolean;
+}) {
+	const { localTime, isPlayheadWithinElementRange } = useElementPlayhead({
+		startTime: element.startTime,
+		duration: element.duration,
+	});
+
+	const propertyPath = buildEffectParamPath({
+		effectId: effect.id,
+		paramKey: param.key,
+	});
+
+	const resolvedValue = enableKeyframes
+		? resolveAnimationPathValueAtTime({
+				animations: element.animations,
+				propertyPath,
+				localTime,
+				fallbackValue,
+			})
+		: fallbackValue;
+
+	const animatedParam = useKeyframedParamProperty({
+		param,
+		trackId,
+		elementId: element.id,
+		animations: element.animations,
+		propertyPath,
+		localTime,
+		isPlayheadWithinElementRange,
+		resolvedValue,
+		buildBaseUpdates: ({ value }) =>
+			element.type === "effect"
+				? { params: { ...element.params, [param.key]: value } }
+				: {
+						effects: (element.effects ?? []).map((candidate) =>
+							candidate.id !== effect.id
+								? candidate
+								: {
+										...candidate,
+										params: { ...candidate.params, [param.key]: value },
+									},
+						),
+					},
+	});
+
+	return (
+		<div className="flex flex-col gap-3.5">
+			<div className="px-4">
+				<PropertyParamField
+					param={param}
+					value={resolvedValue}
+					onPreview={animatedParam.onPreview}
+					onCommit={animatedParam.onCommit}
+					keyframe={
+						enableKeyframes && param.keyframable !== false
+							? {
+									isActive: animatedParam.isKeyframedAtTime,
+									isDisabled: !isPlayheadWithinElementRange,
+									onToggle: animatedParam.toggleKeyframe,
+								}
+							: undefined
+					}
+				/>
+			</div>
+			<Separator />
+		</div>
 	);
 }

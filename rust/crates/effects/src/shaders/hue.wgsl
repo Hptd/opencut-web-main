@@ -1,0 +1,31 @@
+struct VertexOutput {
+	@builtin(position) position: vec4f,
+	@location(0) tex_coord: vec2f,
+}
+
+struct EffectUniforms {
+	resolution: vec2f,
+	direction: vec2f,
+	color: vec4f,
+	params0: vec4f,
+	params1: vec4f,
+}
+
+@group(0) @binding(0) var input_texture: texture_2d<f32>;
+@group(0) @binding(1) var input_sampler: sampler;
+@group(1) @binding(0) var<uniform> uniforms: EffectUniforms;
+
+@fragment
+fn fragment_main(input: VertexOutput) -> @location(0) vec4f {
+	let texel = textureSample(input_texture, input_sampler, input.tex_coord);
+	let angle = radians(uniforms.params0.x);
+	let c = cos(angle);
+	let s = sin(angle);
+	let m = mat3x3f(
+		vec3f(0.299 + 0.701 * c + 0.168 * s, 0.299 - 0.299 * c - 0.328 * s, 0.299 - 0.300 * c + 1.250 * s),
+		vec3f(0.587 - 0.587 * c + 0.330 * s, 0.587 + 0.413 * c + 0.035 * s, 0.587 - 0.588 * c - 1.050 * s),
+		vec3f(0.114 - 0.114 * c - 0.497 * s, 0.114 - 0.114 * c + 0.292 * s, 0.114 + 0.886 * c - 0.203 * s),
+	);
+	let rgb = m * texel.rgb;
+	return vec4f(clamp(rgb, vec3f(0.0), vec3f(1.0)), texel.a);
+}

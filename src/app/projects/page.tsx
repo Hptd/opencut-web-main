@@ -27,13 +27,17 @@ export default function ProjectsPage() {
 	const { t } = useTranslation();
 	const [recent, setRecent] = useState<RecentFileRecord[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
-	const isSupported = editor.project.isFileAccessSupported();
+	const [isSupported, setIsSupported] = useState(false);
 
 	const refreshRecent = useCallback(async () => {
 		const records = await listRecentFiles();
 		setRecent(records);
 		setIsLoading(false);
 	}, []);
+
+	useEffect(() => {
+		setIsSupported(editor.project.isFileAccessSupported());
+	}, [editor]);
 
 	useEffect(() => {
 		void refreshRecent();

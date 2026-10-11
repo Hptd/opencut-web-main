@@ -9,28 +9,109 @@ import { useEditor } from "@/editor/use-editor";
 import { useTranslation } from "@/i18n";
 import { buildEffectElement } from "@/timeline/element-utils";
 import type { EffectDefinition } from "@/effects/types";
+import {
+	DEFAULT_EFFECT_CATEGORY,
+	EFFECT_CATEGORY_LABELS,
+	EFFECT_CATEGORY_ORDER,
+} from "@/effects/categories";
 
-// Effects that currently freeze playback (their shader lives in the prebuilt
-// `opencut-wasm` compositor and cannot be fixed here) are hidden from the
-// picker. The definitions stay registered so existing projects still resolve.
-const HIDDEN_EFFECT_TYPES: ReadonlySet<string> = new Set(["blur"]);
+const ADJUSTMENT_TYPE_PREFIX = "adjust-";
 
-export function EffectsView() {
+function isAdjustmentEffect(effect: EffectDefinition): boolean {
+	return effect.type.startsWith(ADJUSTMENT_TYPE_PREFIX);
+}
+
+function EffectListView({
+	title,
+	effects,
+	emptyLabel,
+	grouped = false,
+}: {
+	title: string;
+	effects: EffectDefinition[];
+	emptyLabel: string;
+	grouped?: boolean;
+}) {
 	const { t } = useTranslation();
-	const effects = effectsRegistry
-		.getAll()
-		.filter((effect) => !HIDDEN_EFFECT_TYPES.has(effect.type));
 
 	return (
-		<PanelView title={t("Effects")}>
+		<PanelView title={t(title)}>
 			{effects.length === 0 ? (
-				<div className="text-muted-foreground p-4 text-sm">
-					{t("No effects available yet.")}
-				</div>
+				<div className="text-muted-foreground p-4 text-sm">{t(emptyLabel)}</div>
+			) : grouped ? (
+				<GroupedEffects effects={effects} />
 			) : (
 				<EffectsGrid effects={effects} />
 			)}
 		</PanelView>
+	);
+}
+
+export function EffectsView() {
+	const effects = effectsRegistry
+		.getAll()
+		.filter((effect) => !isAdjustmentEffect(effect));
+
+	return (
+		<EffectListView
+			title="Effects"
+			effects={effects}
+			emptyLabel="No effects available yet."
+			grouped
+		/>
+	);
+}
+
+export function AdjustmentsView() {
+	const effects = effectsRegistry
+		.getAll()
+		.filter((effect) => isAdjustmentEffect(effect));
+
+	return (
+		<EffectListView
+			title="Adjustment"
+			effects={effects}
+			emptyLabel="No adjustments available yet."
+			grouped
+		/>
+	);
+}
+
+function GroupedEffects({ effects }: { effects: EffectDefinition[] }) {
+	const { t } = useTranslation();
+	const presentCategories = Array.from(
+		new Set(effects.map((effect) => effect.category ?? DEFAULT_EFFECT_CATEGORY)),
+	);
+	const ordered = [
+		...EFFECT_CATEGORY_ORDER.filter((category) =>
+			presentCategories.includes(category),
+		),
+		...presentCategories.filter(
+			(category) =>
+				!EFFECT_CATEGORY_ORDER.includes(
+					category as (typeof EFFECT_CATEGORY_ORDER)[number],
+				),
+		),
+	];
+
+	return (
+		<div className="flex flex-col gap-4">
+			{ordered.map((category) => {
+				const items = effects.filter(
+					(effect) => (effect.category ?? DEFAULT_EFFECT_CATEGORY) === category,
+				);
+				if (items.length === 0) return null;
+				const label = EFFECT_CATEGORY_LABELS[category] ?? category;
+				return (
+					<div key={category} className="flex flex-col gap-2">
+						<h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+							{t(label)}
+						</h4>
+						<EffectsGrid effects={items} />
+					</div>
+				);
+			})}
+		</div>
 	);
 }
 

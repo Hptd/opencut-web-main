@@ -36,6 +36,7 @@ export interface EffectDefinition {
 	type: string;
 	name: string;
 	keywords: string[];
+	category?: string;
 	params: ParamDefinition[];
 	renderer: EffectRendererConfig;
 }

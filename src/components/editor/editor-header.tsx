@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "../ui/button";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -47,8 +47,12 @@ function SaveControls() {
 	const { t } = useTranslation();
 	const fileName = useEditor((e) => e.project.getFileName());
 	const { project } = editor;
-	const isSupported = project.isFileAccessSupported();
+	const [isSupported, setIsSupported] = useState(false);
 	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		setIsSupported(project.isFileAccessSupported());
+	}, [project]);
 
 	const run = async (task: () => Promise<unknown>) => {
 		setBusy(true);

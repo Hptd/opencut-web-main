@@ -463,9 +463,20 @@ function resolveEffectLayerNode({
 	}
 
 	const definition = effectsRegistry.get(node.params.effectType);
+	const localTime = getElementLocalTime({
+		timelineTime: context.time,
+		elementStartTime: node.params.timeOffset,
+		elementDuration: node.params.duration,
+	});
+	const effectParams = resolveEffectParamsAtTime({
+		effectId: node.params.elementId,
+		params: node.params.effectParams,
+		animations: node.params.animations,
+		localTime,
+	});
 	const passes = resolveEffectPasses({
 		definition,
-		effectParams: node.params.effectParams,
+		effectParams,
 		width: context.renderer.width,
 		height: context.renderer.height,
 	});

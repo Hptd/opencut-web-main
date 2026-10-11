@@ -140,6 +140,28 @@ function buildEffectParamDescriptor({
 	effectId: string;
 	paramKey: string;
 }): AnimationPathDescriptor | null {
+	if (element.type === "effect") {
+		if (element.id !== effectId) {
+			return null;
+		}
+
+		registerDefaultEffects();
+		const definition = effectsRegistry.get(element.effectType);
+		const param = definition.params.find((candidate) => candidate.key === paramKey);
+		if (!param) {
+			return null;
+		}
+
+		return buildParamDescriptor({
+			param,
+			baseParams: element.params,
+			setParams: (params) => ({
+				...element,
+				params,
+			}),
+		});
+	}
+
 	if (!isVisualElement(element)) {
 		return null;
 	}

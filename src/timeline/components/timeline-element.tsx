@@ -1061,7 +1061,7 @@ function EffectsButton({
 	const editor = useEditor();
 	const setActiveTab = usePropertiesStore((s) => s.setActiveTab);
 
-	const handleClick = (event: React.MouseEvent) => {
+	const handleClick = (event: React.SyntheticEvent) => {
 		event.stopPropagation();
 		editor.selection.setSelectedElements({
 			elements: [{ trackId: track.id, elementId: element.id }],
@@ -1070,14 +1070,21 @@ function EffectsButton({
 	};
 
 	return (
-		<button
-			type="button"
+		<span
+			role="button"
+			tabIndex={0}
 			className="flex shrink-0 justify-center text-white cursor-pointer"
 			onMouseDown={(event) => event.stopPropagation()}
 			onClick={handleClick}
+			onKeyDown={(event) => {
+				if (event.key === "Enter" || event.key === " ") {
+					event.preventDefault();
+					handleClick(event);
+				}
+			}}
 		>
 			<HugeiconsIcon icon={MagicWand05Icon} size={12} />
-		</button>
+		</span>
 	);
 }
 
