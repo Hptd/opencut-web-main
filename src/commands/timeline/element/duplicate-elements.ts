@@ -8,6 +8,7 @@ import { generateUUID } from "@/utils/id";
 import { EditorCore } from "@/core";
 import { applyPlacement, resolveTrackPlacement } from "@/timeline/placement";
 import { cloneAnimations } from "@/animation";
+import { cloneElementBookmarks } from "@/timeline/bookmarks/element-utils";
 import type { MediaTime } from "@/wasm";
 
 interface DuplicateElementsParams {
@@ -130,6 +131,10 @@ function buildDuplicateElement({
 		animations: cloneAnimations({
 			animations: element.animations,
 			shouldRegenerateKeyframeIds: true,
+		}),
+		bookmarks: cloneElementBookmarks({
+			bookmarks: element.bookmarks,
+			shouldRegenerateIds: true,
 		}),
 	};
 }

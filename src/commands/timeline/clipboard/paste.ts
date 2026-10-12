@@ -13,6 +13,7 @@ import {
 	enforceMainTrackStart,
 } from "@/timeline/placement";
 import { cloneAnimations } from "@/animation";
+import { cloneElementBookmarks } from "@/timeline/bookmarks/element-utils";
 import {
 	addMediaTime,
 	type MediaTime,
@@ -208,6 +209,10 @@ function buildPastedElements({
 			animations: cloneAnimations({
 				animations: item.element.animations,
 				shouldRegenerateKeyframeIds: true,
+			}),
+			bookmarks: cloneElementBookmarks({
+				bookmarks: item.element.bookmarks,
+				shouldRegenerateIds: true,
 			}),
 		} as TimelineElement);
 	}

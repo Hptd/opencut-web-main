@@ -33,6 +33,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTranslation } from "@/i18n";
+import { getElementBookmarkAbsoluteTime } from "@/timeline/bookmarks/element-utils";
 import { usePreviewViewport } from "./preview-viewport";
 import { GridPopover } from "./guide-popover";
 import { usePreviewStore } from "@/preview/preview-store";
@@ -152,16 +153,34 @@ function TransportControls() {
 	}: {
 		direction: "previous" | "next";
 	}) => {
-		const bookmarks = editor.scenes.getActiveScene().bookmarks;
+		const scene = editor.scenes.getActiveScene();
 		const currentTime = editor.playback.getCurrentTime();
+
+		const bookmarkTimes = new Set<MediaTime>();
+		for (const bookmark of scene.bookmarks) {
+			bookmarkTimes.add(bookmark.time);
+		}
+		for (const track of [
+			...scene.tracks.overlay,
+			scene.tracks.main,
+			...scene.tracks.audio,
+		]) {
+			for (const element of track.elements) {
+				for (const bookmark of element.bookmarks ?? []) {
+					bookmarkTimes.add(
+						getElementBookmarkAbsoluteTime({ element, bookmark }),
+					);
+				}
+			}
+		}
+
+		const sortedTimes = [...bookmarkTimes].sort((a, b) => a - b);
 		const target =
 			direction === "previous"
-				? [...bookmarks]
-						.reverse()
-						.find((bookmark) => bookmark.time < currentTime)
-				: bookmarks.find((bookmark) => bookmark.time > currentTime);
-		if (!target) return;
-		editor.playback.seek({ time: target.time });
+				? [...sortedTimes].reverse().find((time) => time < currentTime)
+				: sortedTimes.find((time) => time > currentTime);
+		if (target === undefined) return;
+		editor.playback.seek({ time: target });
 	};
 
 	return (

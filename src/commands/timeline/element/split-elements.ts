@@ -8,6 +8,7 @@ import { generateUUID } from "@/utils/id";
 import { EditorCore } from "@/core";
 import { isRetimableElement } from "@/timeline";
 import { splitAnimationsAtTime } from "@/animation";
+import { splitElementBookmarksAtTime } from "@/timeline/bookmarks/element-utils";
 import { getSourceSpanAtClipTime } from "@/retime";
 import {
 	addMediaTime,
@@ -117,6 +118,11 @@ export class SplitElementsCommand extends Command {
 					splitTime: relativeTime,
 					shouldIncludeSplitBoundary: true,
 				});
+				const { leftBookmarks, rightBookmarks } =
+					splitElementBookmarksAtTime({
+						bookmarks: element.bookmarks,
+						splitTime: relativeTime,
+					});
 				let splitResult: TimelineElement[];
 
 				const leftTrimEnd = addMediaTime({
@@ -136,6 +142,7 @@ export class SplitElementsCommand extends Command {
 							trimEnd: leftTrimEnd,
 							name: `${element.name} (left)`,
 							animations: leftAnimations,
+							bookmarks: leftBookmarks,
 							...(retimeRef !== undefined ? { retime: retimeRef } : {}),
 						},
 					];
@@ -154,6 +161,7 @@ export class SplitElementsCommand extends Command {
 							trimStart: rightTrimStart,
 							name: `${element.name} (right)`,
 							animations: rightAnimations,
+							bookmarks: rightBookmarks,
 							...(retimeRef !== undefined ? { retime: retimeRef } : {}),
 						},
 					];
@@ -170,6 +178,7 @@ export class SplitElementsCommand extends Command {
 							trimEnd: leftTrimEnd,
 							name: `${element.name} (left)`,
 							animations: leftAnimations,
+							bookmarks: leftBookmarks,
 							...(retimeRef !== undefined ? { retime: retimeRef } : {}),
 						},
 						{
@@ -180,6 +189,7 @@ export class SplitElementsCommand extends Command {
 							trimStart: rightTrimStart,
 							name: `${element.name} (right)`,
 							animations: rightAnimations,
+							bookmarks: rightBookmarks,
 							...(retimeRef !== undefined ? { retime: retimeRef } : {}),
 						},
 					];

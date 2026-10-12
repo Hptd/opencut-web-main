@@ -6,6 +6,11 @@ import { useEditor } from "@/editor/use-editor";
 import type { BookmarkDragState } from "../hooks/use-bookmark-drag";
 import { DEFAULT_TIMELINE_BOOKMARK_COLOR } from "@/timeline/components/theme";
 import { TIMELINE_BOOKMARK_ROW_HEIGHT_PX } from "@/timeline/components/layout";
+import {
+	BOOKMARK_HALF_WIDTH_PX,
+	BOOKMARK_MARKER_WIDTH_PX,
+	BookmarkMarker,
+} from "./bookmark-marker";
 import { DEFAULT_FPS } from "@/fps/defaults";
 import {
 	ArrowTurnBackwardIcon,
@@ -33,13 +38,6 @@ import {
 	subMediaTime,
 	ZERO_MEDIA_TIME,
 } from "@/wasm";
-
-const MIN_BOOKMARK_WIDTH_PX = 2;
-const BOOKMARK_MARKER_WIDTH_PX = 12;
-const BOOKMARK_MARKER_HEIGHT_PX = 15;
-const BOOKMARK_HALF_WIDTH_PX = BOOKMARK_MARKER_WIDTH_PX / 2;
-const BOOKMARK_MARKER_CLIP_PATH =
-	"polygon(50% 100%, 12% 72%, 12% 10%, 88% 10%, 88% 72%)";
 
 function seekToBookmarkTime({
 	editor,
@@ -148,11 +146,9 @@ function TimelineBookmark({
 		bookmarkDuration > 0
 			? timelineTimeToPixels({ time: bookmarkDuration, zoomLevel })
 			: 0;
-	const hasDurationRange = durationWidth > MIN_BOOKMARK_WIDTH_PX;
 	const bookmarkWidth = BOOKMARK_MARKER_WIDTH_PX + Math.max(durationWidth, 0);
 	const left = timelineTimeToSnappedPixels({ time: displayTime, zoomLevel });
 	const bookmarkLeft = left - BOOKMARK_HALF_WIDTH_PX;
-	const rightHalfLeft = BOOKMARK_HALF_WIDTH_PX + Math.max(durationWidth, 0);
 	const iconColor = bookmark.color ?? DEFAULT_TIMELINE_BOOKMARK_COLOR;
 
 	const handleSeek = () => seekToBookmarkTime({ editor, time });
@@ -194,77 +190,7 @@ function TimelineBookmark({
 					onClick={handleClick}
 					onKeyDown={handleKeyDown}
 				>
-					{hasDurationRange ? (
-						<div
-							className="absolute opacity-30"
-							style={{
-								top: 1.5,
-								height: BOOKMARK_MARKER_HEIGHT_PX - 2.5,
-								left: BOOKMARK_HALF_WIDTH_PX,
-								width: durationWidth,
-								backgroundColor: iconColor,
-							}}
-						/>
-					) : null}
-					<div
-						className="absolute top-0 overflow-hidden"
-						style={{
-							left: 0,
-							width: BOOKMARK_HALF_WIDTH_PX,
-							height: BOOKMARK_MARKER_HEIGHT_PX,
-						}}
-					>
-						<div
-							className="absolute inset-0"
-							style={{
-								width: BOOKMARK_MARKER_WIDTH_PX,
-								height: BOOKMARK_MARKER_HEIGHT_PX,
-								clipPath: BOOKMARK_MARKER_CLIP_PATH,
-								backgroundColor: "hsl(var(--background))",
-							}}
-						/>
-						<div
-							className="absolute"
-							style={{
-								top: 1,
-								left: 1,
-								width: BOOKMARK_MARKER_WIDTH_PX - 2,
-								height: BOOKMARK_MARKER_HEIGHT_PX - 2,
-								clipPath: BOOKMARK_MARKER_CLIP_PATH,
-								backgroundColor: iconColor,
-							}}
-						/>
-					</div>
-					<div
-						className="absolute top-0 overflow-hidden"
-						style={{
-							left: rightHalfLeft,
-							width: BOOKMARK_HALF_WIDTH_PX,
-							height: BOOKMARK_MARKER_HEIGHT_PX,
-						}}
-					>
-						<div
-							className="absolute top-0"
-							style={{
-								left: -BOOKMARK_HALF_WIDTH_PX,
-								width: BOOKMARK_MARKER_WIDTH_PX,
-								height: BOOKMARK_MARKER_HEIGHT_PX,
-								clipPath: BOOKMARK_MARKER_CLIP_PATH,
-								backgroundColor: "hsl(var(--background))",
-							}}
-						/>
-						<div
-							className="absolute"
-							style={{
-								top: 1,
-								left: 1 - BOOKMARK_HALF_WIDTH_PX,
-								width: BOOKMARK_MARKER_WIDTH_PX - 2,
-								height: BOOKMARK_MARKER_HEIGHT_PX - 2,
-								clipPath: BOOKMARK_MARKER_CLIP_PATH,
-								backgroundColor: iconColor,
-							}}
-						/>
-					</div>
+					<BookmarkMarker color={iconColor} durationWidth={durationWidth} />
 				</button>
 			</PopoverAnchor>
 			<PopoverContent

@@ -7,11 +7,23 @@ import type {
 	TimelineTrack,
 	TimelineElement,
 	RetimeConfig,
+	ElementRef,
 } from "@/timeline";
 import { calculateTotalDuration } from "@/timeline";
 import { TimelineDragSource } from "@/timeline/drag-source";
 import { findTrackInSceneTracks } from "@/timeline/track-element-update";
-import { lastFrameMediaTime, type MediaTime, ZERO_MEDIA_TIME } from "@/wasm";
+import {
+	lastFrameMediaTime,
+	type MediaTime,
+	ZERO_MEDIA_TIME,
+	addMediaTime,
+	subMediaTime,
+	roundFrameTime,
+} from "@/wasm";
+import {
+	isElementBookmarkAtTime,
+	toggleElementBookmarkInArray,
+} from "@/timeline/bookmarks/element-utils";
 import {
 	canElementBeHidden,
 	canElementHaveAudio,
@@ -296,6 +308,84 @@ export class TimelineManager {
 		} else {
 			command.execute();
 		}
+	}
+
+	toggleElementBookmarks({
+		elements,
+		time,
+	}: {
+		elements: ElementRef[];
+		time: MediaTime;
+	}): void {
+		const fps = this.editor.project.getActiveOrNull()?.settings.fps;
+		if (!fps) return;
+
+		const updates: Array<{
+			trackId: string;
+			elementId: string;
+			patch: Partial<TimelineElement>;
+		}> = [];
+
+		for (const { track, element } of this.getElementsWithTracks({ elements })) {
+			const endTime = addMediaTime({
+				a: element.startTime,
+				b: element.duration,
+			});
+			if (time < element.startTime || time > endTime) continue;
+
+			const relativeTime = roundFrameTime({
+				time: subMediaTime({ a: time, b: element.startTime }),
+				fps,
+			});
+			updates.push({
+				trackId: track.id,
+				elementId: element.id,
+				patch: {
+					bookmarks: toggleElementBookmarkInArray({
+						bookmarks: element.bookmarks,
+						relativeTime,
+					}),
+				},
+			});
+		}
+
+		if (updates.length > 0) {
+			this.updateElements({ updates });
+		}
+	}
+
+	getIsElementBookmarked({
+		elements,
+		time,
+	}: {
+		elements: ElementRef[];
+		time: MediaTime;
+	}): boolean {
+		const fps = this.editor.project.getActiveOrNull()?.settings.fps;
+		if (!fps) return false;
+
+		for (const { element } of this.getElementsWithTracks({ elements })) {
+			const endTime = addMediaTime({
+				a: element.startTime,
+				b: element.duration,
+			});
+			if (time < element.startTime || time > endTime) continue;
+
+			const relativeTime = roundFrameTime({
+				time: subMediaTime({ a: time, b: element.startTime }),
+				fps,
+			});
+			if (
+				isElementBookmarkAtTime({
+					bookmarks: element.bookmarks,
+					relativeTime,
+				})
+			) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	addClipEffect({

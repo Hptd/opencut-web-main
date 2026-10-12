@@ -11,6 +11,14 @@ export {
 } from "./utils";
 export { getBookmarkSnapPoints } from "./snap-source";
 export {
+	cloneElementBookmarks,
+	clampElementBookmarksToDuration,
+	getElementBookmarkAbsoluteTime,
+	isElementBookmarkAtTime,
+	splitElementBookmarksAtTime,
+	toggleElementBookmarkInArray,
+} from "./element-utils";
+export {
 	bookmarkNotesPreviewOverlay,
 	getBookmarkPreviewOverlaySource,
 } from "./preview-overlay-source";

@@ -440,7 +440,18 @@ export function useEditorActions() {
 	useActionHandler(
 		"toggle-bookmark",
 		() => {
-			editor.scenes.toggleBookmark({ time: editor.playback.getCurrentTime() });
+			const time = editor.playback.getCurrentTime();
+			const selectedElements = editor.selection.getSelectedElements();
+
+			if (selectedElements.length > 0) {
+				editor.timeline.toggleElementBookmarks({
+					elements: selectedElements,
+					time,
+				});
+				return;
+			}
+
+			editor.scenes.toggleBookmark({ time });
 		},
 		undefined,
 	);

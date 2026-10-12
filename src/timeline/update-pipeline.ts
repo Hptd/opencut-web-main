@@ -1,4 +1,5 @@
 import { clampAnimationsToDuration } from "@/animation";
+import { clampElementBookmarksToDuration } from "@/timeline/bookmarks/element-utils";
 import {
 	clampRetimeRate,
 	getSourceSpanAtClipTime,
@@ -89,6 +90,10 @@ const enforceRules: ElementUpdateRule[] = [
 				...element,
 				animations: clampAnimationsToDuration({
 					animations: element.animations,
+					duration: element.duration,
+				}),
+				bookmarks: clampElementBookmarksToDuration({
+					bookmarks: element.bookmarks,
 					duration: element.duration,
 				}),
 			},

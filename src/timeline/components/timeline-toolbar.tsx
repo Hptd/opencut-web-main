@@ -94,9 +94,14 @@ function ToolbarLeftSection() {
 	);
 	const { selectedElements } = useElementSelection();
 	const graphEditor = useGraphEditorController();
-	const isCurrentlyBookmarked = useEditor((e) =>
-		e.scenes.isBookmarked({ time: e.playback.getCurrentTime() }),
-	);
+	const isCurrentlyBookmarked = useEditor((e) => {
+		const time = e.playback.getCurrentTime();
+		const selected = e.selection.getSelectedElements();
+		if (selected.length > 0) {
+			return e.timeline.getIsElementBookmarked({ elements: selected, time });
+		}
+		return e.scenes.isBookmarked({ time });
+	});
 	const selectedElement =
 		selectedElements.length === 1
 			? (editor.timeline.getElementsWithTracks({
@@ -207,9 +212,13 @@ function ToolbarLeftSection() {
 						icon={<HugeiconsIcon icon={Bookmark02Icon} />}
 						isActive={isCurrentlyBookmarked}
 						tooltip={
-							isCurrentlyBookmarked
-								? t("Remove bookmark")
-								: t("Add bookmark")
+							selectedElements.length > 0
+								? isCurrentlyBookmarked
+									? t("Remove element label")
+									: t("Add element label")
+								: isCurrentlyBookmarked
+									? t("Remove bookmark")
+									: t("Add bookmark")
 						}
 						onClick={({ event }) =>
 							handleAction({ action: "toggle-bookmark", event })

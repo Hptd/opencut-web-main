@@ -151,6 +151,8 @@ export const zhDictionary: Record<string, string> = {
 	"Delete element": "删除片段",
 	"Add bookmark": "添加书签",
 	"Remove bookmark": "删除书签",
+	"Add element label": "添加元素标签",
+	"Remove element label": "删除元素标签",
 	"Open graph editor": "打开曲线编辑器",
 	"No Scene": "无场景",
 	"Auto snapping": "自动吸附",

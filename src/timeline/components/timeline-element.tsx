@@ -23,7 +23,19 @@ import {
 	timelineTimeToSnappedPixels,
 } from "@/timeline";
 import { getTrackHeight } from "./track-layout";
-import { getTimelineElementClassName, TIMELINE_TRACK_THEME } from "./theme";
+import {
+	DEFAULT_ELEMENT_BOOKMARK_COLOR,
+	getTimelineElementClassName,
+	TIMELINE_TRACK_THEME,
+} from "./theme";
+import { getElementBookmarkAbsoluteTime } from "@/timeline/bookmarks/element-utils";
+import {
+	BookmarkMarker,
+	BOOKMARK_HALF_WIDTH_PX,
+	BOOKMARK_MARKER_HEIGHT_PX,
+	BOOKMARK_MARKER_WIDTH_PX,
+} from "@/timeline/bookmarks/components/bookmark-marker";
+import { EditorCore } from "@/core";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -404,6 +416,11 @@ export function TimelineElement({
 							onResizeStart={onResizeStart}
 							isDropTarget={isDropTarget}
 						/>
+						<ElementBookmarkMarkers
+							element={element}
+							zoomLevel={zoomLevel}
+							height={baseTrackHeight}
+						/>
 						{isSelected && (
 							<div
 								className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
@@ -508,6 +525,51 @@ export function TimelineElement({
 				</ContextMenuContent>
 			</ContextMenu>
 		</PixelsPerSecondContext.Provider>
+	);
+}
+
+function ElementBookmarkMarkers({
+	element,
+	zoomLevel,
+	height,
+}: {
+	element: TimelineElementType;
+	zoomLevel: number;
+	height: number;
+}) {
+	const bookmarks = element.bookmarks ?? [];
+	if (bookmarks.length === 0) return null;
+
+	return (
+		<div
+			className="pointer-events-none absolute inset-x-0 top-0"
+			style={{ height: `${height}px` }}
+		>
+			{bookmarks.map((bookmark) => (
+				<button
+					key={bookmark.id}
+					type="button"
+					aria-label="Element label"
+					className="pointer-events-auto absolute top-0 z-20 cursor-pointer border-0 bg-transparent p-0"
+					style={{
+						left: `${timelineTimeToPixels({ time: bookmark.time, zoomLevel }) - BOOKMARK_HALF_WIDTH_PX}px`,
+						width: `${BOOKMARK_MARKER_WIDTH_PX}px`,
+						height: `${BOOKMARK_MARKER_HEIGHT_PX}px`,
+					}}
+					onMouseDown={(event) => event.stopPropagation()}
+					onClick={(event) => {
+						event.stopPropagation();
+						EditorCore.getInstance().playback.seek({
+							time: getElementBookmarkAbsoluteTime({ element, bookmark }),
+						});
+					}}
+				>
+					<BookmarkMarker
+						color={bookmark.color ?? DEFAULT_ELEMENT_BOOKMARK_COLOR}
+					/>
+				</button>
+			))}
+		</div>
 	);
 }
 

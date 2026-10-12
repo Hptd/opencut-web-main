@@ -16,6 +16,15 @@ export interface Bookmark {
 	duration?: MediaTime;
 }
 
+export interface ElementBookmark {
+	id: string;
+	/** Relative to the owning element's startTime. */
+	time: MediaTime;
+	note?: string;
+	color?: string;
+	duration?: MediaTime;
+}
+
 export interface TScene {
 	id: string;
 	name: string;
@@ -111,6 +120,7 @@ interface BaseTimelineElement {
 	trimEnd: MediaTime;
 	sourceDuration?: MediaTime;
 	animations?: ElementAnimations;
+	bookmarks?: ElementBookmark[];
 	params: ParamValues;
 }
 
