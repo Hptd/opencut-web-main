@@ -1,4 +1,5 @@
 import {
+	env,
 	pipeline,
 	type AutomaticSpeechRecognitionPipeline,
 	type AutomaticSpeechRecognitionOutput,
@@ -8,6 +9,8 @@ import {
 	DEFAULT_CHUNK_LENGTH_SECONDS,
 	DEFAULT_STRIDE_SECONDS,
 } from "@/transcription/audio";
+
+env.remoteHost = "https://hf-mirror.com/";
 
 export type WorkerMessage =
 	| { type: "init"; modelId: string }

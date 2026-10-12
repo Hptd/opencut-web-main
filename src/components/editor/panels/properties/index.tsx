@@ -12,7 +12,7 @@ import { useEditor } from "@/editor/use-editor";
 import { useTranslation } from "@/i18n";
 import { useElementSelection } from "@/timeline/hooks/element/use-element-selection";
 import { usePropertiesStore } from "./stores/properties-store";
-import { getPropertiesConfig } from "./registry";
+import { getMultiPropertiesConfig, getPropertiesConfig } from "./registry";
 import { cn } from "@/utils/ui";
 import { EmptyView } from "./empty-view";
 
@@ -32,18 +32,6 @@ export function PropertiesPanel() {
 		);
 	}
 
-	if (selectedElements.length > 1) {
-		return (
-			<div className="panel bg-background flex h-full flex-col items-center justify-center overflow-hidden rounded-sm border">
-				<p className="text-muted-foreground text-sm">
-					{selectedElements.length} elements selected.0
-				</p>
-			</div>
-		);
-	}
-
-	const mediaAssets = editor.media.getAssets();
-
 	const elementsWithTracks = editor.timeline.getElementsWithTracks({
 		elements: selectedElements,
 	});
@@ -51,8 +39,30 @@ export function PropertiesPanel() {
 
 	if (!elementWithTrack) return null;
 
+	const mediaAssets = editor.media.getAssets();
 	const { element, track } = elementWithTrack;
-	const config = getPropertiesConfig({ element, mediaAssets });
+	const config =
+		selectedElements.length > 1
+			? getMultiPropertiesConfig({
+					elementsWithTracks: elementsWithTracks.map(
+						({ track: elementTrack, element: selectedElement }) => ({
+							trackId: elementTrack.id,
+							element: selectedElement,
+						}),
+					),
+				})
+			: getPropertiesConfig({ element, mediaAssets });
+
+	if (!config) {
+		return (
+			<div className="panel bg-background flex h-full flex-col items-center justify-center overflow-hidden rounded-sm border">
+				<p className="text-muted-foreground text-sm">
+					{t("{count} elements selected", { count: selectedElements.length })}
+				</p>
+			</div>
+		);
+	}
+
 	const visibleTabs = config.tabs;
 
 	const storedTabId = activeTabPerType[element.type];

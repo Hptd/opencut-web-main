@@ -174,11 +174,21 @@ export const zhDictionary: Record<string, string> = {
 	"Show track": "显示轨道",
 	"Hide track": "隐藏轨道",
 	"Delete track": "删除轨道",
+	"Mixed": "混合",
+	"{count} elements selected": "已选择 {count} 个元素",
 	"Timeline ruler": "时间线标尺",
 	"Timeline playhead": "时间线播放头",
 	"Drag playhead": "拖动播放头",
 	"Drag to adjust clip volume": "拖动调整片段音量",
 	"Select {track} track": "选择{track}轨道",
+
+	// playback controls
+	"Go to start": "回到起点",
+	"Previous bookmark": "上一个书签",
+	"Previous frame": "上一帧",
+	"Next frame": "下一帧",
+	"Next bookmark": "下一个书签",
+	"Go to end": "回到终点",
 
 	// graph editor
 	Smooth: "平滑",

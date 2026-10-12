@@ -23,6 +23,7 @@ import {
 	DashboardSpeed02Icon,
 } from "@hugeicons/core-free-icons";
 import { ElementParamsTab } from "./components/element-params-tab";
+import { MultiElementParamsTab } from "./components/multi-element-params-tab";
 import { ClipEffectsTab, StandaloneEffectTab } from "@/effects/components/effects-tab";
 import { MasksTab } from "@/masks/components/masks-tab";
 import { SpeedTab } from "@/speed/components/speed-tab";
@@ -58,6 +59,29 @@ const TEXT_PARAM_KEYS = [
 	"background.offsetX",
 	"background.offsetY",
 ] as const;
+
+const MULTI_TEXT_PARAM_KEYS = [
+	"fontFamily",
+	"fontSize",
+	"color",
+	"textAlign",
+	"fontWeight",
+	"fontStyle",
+	"textDecoration",
+	"letterSpacing",
+	"lineHeight",
+	"background.enabled",
+	"background.color",
+	"background.cornerRadius",
+	"background.paddingX",
+	"background.paddingY",
+	"background.offsetX",
+	"background.offsetY",
+] as const;
+
+const MULTI_AUDIO_PARAM_KEYS = ["volume"] as const;
+
+type ElementWithTrack = { trackId: string; element: TimelineElement };
 
 export type TabContentProps = {
 	trackId: string;
@@ -351,4 +375,73 @@ export function getPropertiesConfig({
 		case "effect":
 			return getEffectConfig({ element });
 	}
+}
+
+function buildMultiTextTab({
+	elementsWithTracks,
+}: {
+	elementsWithTracks: ElementWithTrack[];
+}): PropertiesTabDef {
+	return {
+		id: "text",
+		label: "Text",
+		icon: <HugeiconsIcon icon={TextFontIcon} size={16} />,
+		content: () => (
+			<MultiElementParamsTab
+				elementsWithTracks={elementsWithTracks}
+				paramKeys={MULTI_TEXT_PARAM_KEYS}
+				sectionKey="text"
+			/>
+		),
+	};
+}
+
+function buildMultiAudioTab({
+	elementsWithTracks,
+}: {
+	elementsWithTracks: ElementWithTrack[];
+}): PropertiesTabDef {
+	return {
+		id: "audio",
+		label: "Audio",
+		icon: <HugeiconsIcon icon={MusicNote03Icon} size={16} />,
+		content: () => (
+			<MultiElementParamsTab
+				elementsWithTracks={elementsWithTracks}
+				paramKeys={MULTI_AUDIO_PARAM_KEYS}
+				sectionKey="audio"
+			/>
+		),
+	};
+}
+
+/**
+ * Builds a properties config for a multi-element selection.
+ * Only same-type selections of text or audio are supported; returns null otherwise.
+ */
+export function getMultiPropertiesConfig({
+	elementsWithTracks,
+}: {
+	elementsWithTracks: ElementWithTrack[];
+}): ElementPropertiesConfig | null {
+	if (elementsWithTracks.length === 0) return null;
+
+	const type = elementsWithTracks[0].element.type;
+	if (!elementsWithTracks.every((entry) => entry.element.type === type)) {
+		return null;
+	}
+
+	if (type === "text") {
+		return {
+			defaultTab: "text",
+			tabs: [buildMultiTextTab({ elementsWithTracks })],
+		};
+	}
+	if (type === "audio") {
+		return {
+			defaultTab: "audio",
+			tabs: [buildMultiAudioTab({ elementsWithTracks })],
+		};
+	}
+	return null;
 }

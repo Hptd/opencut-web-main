@@ -412,6 +412,7 @@ interface ColorPickerProps {
 	className?: string;
 	contentSide?: ComponentProps<typeof PopoverContent>["side"];
 	contentAlign?: ComponentProps<typeof PopoverContent>["align"];
+	isMixed?: boolean;
 }
 
 const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
@@ -423,6 +424,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 			onChangeEnd,
 			contentSide,
 			contentAlign,
+			isMixed = false,
 			...props
 		},
 		ref,
@@ -504,7 +506,7 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 							/>
 							<span
 								className="absolute inset-0"
-								style={{ backgroundColor: `#${value}` }}
+								style={{ backgroundColor: isMixed ? undefined : `#${value}` }}
 							/>
 						</button>
 					</PopoverTrigger>
@@ -513,7 +515,8 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
 							className="border-0! bg-transparent p-0 ring-0! ring-offset-0! uppercase"
 							size="sm"
 							containerClassName="w-full"
-							value={inputValue}
+							placeholder={isMixed ? "Mixed" : undefined}
+							value={isMixed ? "" : inputValue}
 							onChange={handleInputChange}
 							onBlur={handleInputBlur}
 							onKeyDown={handleInputKeyDown}

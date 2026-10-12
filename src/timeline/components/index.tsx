@@ -2,6 +2,7 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+	CursorRectangleSelection01Icon,
 	Delete02Icon,
 	MagicWand05Icon,
 	MusicNote03Icon,
@@ -20,6 +21,12 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useTranslation } from "@/i18n";
 import { useTimelineZoom } from "@/timeline/hooks/use-timeline-zoom";
 import {
 	useCallback,
@@ -611,6 +618,7 @@ function TrackLabelsPanel({
 	getTrackExpansionHeight: (trackIndex: number) => number;
 }) {
 	const editor = useEditor();
+	const { t } = useTranslation();
 	const scene = useEditor((e) => e.scenes.getActiveSceneOrNull());
 	const tracks = useMemo<TimelineTrack[]>(
 		() =>
@@ -619,7 +627,7 @@ function TrackLabelsPanel({
 				: [],
 		[scene],
 	);
-	const { selectedElements } = useElementSelection();
+	const { selectedElements, setElementSelection } = useElementSelection();
 	const tracksWithSelection = useMemo(
 		() => new Set(selectedElements.map((el) => el.trackId)),
 		[selectedElements],
@@ -670,6 +678,30 @@ function TrackLabelsPanel({
 											className="flex shrink-0 items-center justify-end gap-2 px-3"
 											style={{ height: `${baseHeight}px` }}
 										>
+											{track.elements.length > 0 && (
+												<TrackHeaderButton
+													icon={CursorRectangleSelection01Icon}
+													label={t("Select all elements")}
+													onClick={() =>
+														setElementSelection({
+															elements: track.elements.map((element) => ({
+																trackId: track.id,
+																elementId: element.id,
+															})),
+														})
+													}
+												/>
+											)}
+											{scene && track.id !== scene.tracks.main.id && (
+												<TrackHeaderButton
+													icon={Delete02Icon}
+													label={t("Delete track")}
+													destructive
+													onClick={() =>
+														editor.timeline.removeTrack({ trackId: track.id })
+													}
+												/>
+											)}
 											{canTrackHaveAudio(track) && (
 												<TrackToggleIcon
 													isOff={track.muted}
@@ -752,6 +784,7 @@ function TimelineTrackRows({
 	dropTarget: DropTarget | null;
 }) {
 	const timeline = useEditor((e) => e.timeline);
+	const { t } = useTranslation();
 	const scene = useEditor((e) => e.scenes.getActiveSceneOrNull());
 	const tracks = useMemo<TimelineTrack[]>(
 		() =>
@@ -760,7 +793,7 @@ function TimelineTrackRows({
 				: [],
 		[scene],
 	);
-	const { selectedElements } = useElementSelection();
+	const { selectedElements, setElementSelection } = useElementSelection();
 	const tracksWithSelection = useMemo(
 		() => new Set(selectedElements.map((el) => el.trackId)),
 		[selectedElements],
@@ -836,6 +869,24 @@ function TimelineTrackRows({
 						</div>
 					</ContextMenuTrigger>
 					<ContextMenuContent className="w-40">
+						{track.elements.length > 0 && (
+							<ContextMenuItem
+								icon={
+									<HugeiconsIcon icon={CursorRectangleSelection01Icon} />
+								}
+								onClick={(event: React.MouseEvent) => {
+									event.stopPropagation();
+									setElementSelection({
+										elements: track.elements.map((element) => ({
+											trackId: track.id,
+											elementId: element.id,
+										})),
+									});
+								}}
+							>
+								{t("Select all elements")}
+							</ContextMenuItem>
+						)}
 						<ContextMenuItem
 							icon={<HugeiconsIcon icon={TaskAdd02Icon} />}
 							onClick={(event: React.MouseEvent) => {
@@ -931,6 +982,37 @@ function TrackToggleIcon({
 				/>
 			)}
 		</>
+	);
+}
+
+function TrackHeaderButton({
+	icon,
+	label,
+	onClick,
+	destructive = false,
+}: {
+	icon: IconSvgElement;
+	label: string;
+	onClick: () => void;
+	destructive?: boolean;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<button
+					type="button"
+					aria-label={label}
+					onClick={onClick}
+					className={cn(
+						"text-muted-foreground flex items-center",
+						destructive ? "hover:text-destructive" : "hover:text-foreground",
+					)}
+				>
+					<HugeiconsIcon icon={icon} className="size-4" />
+				</button>
+			</TooltipTrigger>
+			<TooltipContent>{label}</TooltipContent>
+		</Tooltip>
 	);
 }
 

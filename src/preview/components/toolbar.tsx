@@ -7,11 +7,17 @@ import { invokeAction } from "@/actions";
 import { EditableTimecode } from "@/components/editable-timecode";
 import { Button } from "@/components/ui/button";
 import {
+	ArrowLeftDoubleIcon,
+	ArrowRightDoubleIcon,
+	Bookmark01Icon,
+	Bookmark02Icon,
 	FullScreenIcon,
+	NextIcon,
 	PauseIcon,
 	PlayIcon,
+	PreviousIcon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { Separator } from "@/components/ui/separator";
 import {
 	Select,
@@ -21,6 +27,12 @@ import {
 	SelectSeparator,
 } from "@/components/ui/select";
 import { PREVIEW_ZOOM_PRESETS } from "@/preview/zoom";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useTranslation } from "@/i18n";
 import { usePreviewViewport } from "./preview-viewport";
 import { GridPopover } from "./guide-popover";
 import { usePreviewStore } from "@/preview/preview-store";
@@ -34,7 +46,7 @@ export function PreviewToolbar({
 	return (
 		<div className="grid grid-cols-[1fr_auto_1fr] items-center pb-3 pt-5 px-5">
 			<TimecodeDisplay />
-			<PlayPauseButton />
+			<TransportControls />
 			<div className="justify-self-end flex items-center gap-2.5">
 				<ZoomSelect />
 				<Separator orientation="vertical" className="h-4" />
@@ -128,6 +140,85 @@ function ZoomSelect() {
 				))}
 			</SelectContent>
 		</Select>
+	);
+}
+
+function TransportControls() {
+	const editor = useEditor();
+	const { t } = useTranslation();
+
+	const seekToAdjacentBookmark = ({
+		direction,
+	}: {
+		direction: "previous" | "next";
+	}) => {
+		const bookmarks = editor.scenes.getActiveScene().bookmarks;
+		const currentTime = editor.playback.getCurrentTime();
+		const target =
+			direction === "previous"
+				? [...bookmarks]
+						.reverse()
+						.find((bookmark) => bookmark.time < currentTime)
+				: bookmarks.find((bookmark) => bookmark.time > currentTime);
+		if (!target) return;
+		editor.playback.seek({ time: target.time });
+	};
+
+	return (
+		<div className="flex items-center gap-1">
+			<TransportButton
+				icon={PreviousIcon}
+				label={t("Go to start")}
+				onClick={() => invokeAction("goto-start")}
+			/>
+			<TransportButton
+				icon={Bookmark01Icon}
+				label={t("Previous bookmark")}
+				onClick={() => seekToAdjacentBookmark({ direction: "previous" })}
+			/>
+			<TransportButton
+				icon={ArrowLeftDoubleIcon}
+				label={t("Previous frame")}
+				onClick={() => invokeAction("frame-step-backward")}
+			/>
+			<PlayPauseButton />
+			<TransportButton
+				icon={ArrowRightDoubleIcon}
+				label={t("Next frame")}
+				onClick={() => invokeAction("frame-step-forward")}
+			/>
+			<TransportButton
+				icon={Bookmark02Icon}
+				label={t("Next bookmark")}
+				onClick={() => seekToAdjacentBookmark({ direction: "next" })}
+			/>
+			<TransportButton
+				icon={NextIcon}
+				label={t("Go to end")}
+				onClick={() => invokeAction("goto-end")}
+			/>
+		</div>
+	);
+}
+
+function TransportButton({
+	icon,
+	label,
+	onClick,
+}: {
+	icon: IconSvgElement;
+	label: string;
+	onClick: () => void;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button variant="text" size="icon" aria-label={label} onClick={onClick}>
+					<HugeiconsIcon icon={icon} />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>{label}</TooltipContent>
+		</Tooltip>
 	);
 }
 

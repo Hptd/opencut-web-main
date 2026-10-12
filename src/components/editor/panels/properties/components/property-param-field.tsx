@@ -31,12 +31,14 @@ export function PropertyParamField({
 	value,
 	onPreview,
 	onCommit,
+	isMixed = false,
 	keyframe,
 }: {
 	param: ParamDefinition;
 	value: ParamValue;
 	onPreview: (value: ParamValue) => void;
 	onCommit: () => void;
+	isMixed?: boolean;
 	keyframe?: {
 		isActive: boolean;
 		isDisabled: boolean;
@@ -63,6 +65,7 @@ export function PropertyParamField({
 			<ParamInput
 				param={param}
 				value={value}
+				isMixed={isMixed}
 				onPreview={onPreview}
 				onCommit={onCommit}
 			/>
@@ -73,11 +76,13 @@ export function PropertyParamField({
 function ParamInput({
 	param,
 	value,
+	isMixed,
 	onPreview,
 	onCommit,
 }: {
 	param: ParamDefinition;
 	value: ParamValue;
+	isMixed: boolean;
 	onPreview: (value: ParamValue) => void;
 	onCommit: () => void;
 }) {
@@ -87,6 +92,7 @@ function ParamInput({
 			<NumberParamField
 				param={param}
 				value={typeof value === "number" ? value : Number(value)}
+				isMixed={isMixed}
 				onPreview={onPreview}
 				onCommit={onCommit}
 			/>
@@ -95,27 +101,32 @@ function ParamInput({
 
 	if (param.type === "boolean") {
 		return (
-			<Switch
-				checked={Boolean(value)}
-				onCheckedChange={(checked) => {
-					onPreview(checked);
-					onCommit();
-				}}
-			/>
+			<div className="flex items-center gap-2">
+				<Switch
+					checked={Boolean(value)}
+					onCheckedChange={(checked) => {
+						onPreview(checked);
+						onCommit();
+					}}
+				/>
+				{isMixed && (
+					<span className="text-muted-foreground text-xs">{t("Mixed")}</span>
+				)}
+			</div>
 		);
 	}
 
 	if (param.type === "select") {
 		return (
 			<Select
-				value={String(value)}
+				value={isMixed ? "" : String(value)}
 				onValueChange={(selected) => {
 					onPreview(selected);
 					onCommit();
 				}}
 			>
 				<SelectTrigger className="w-full">
-					<SelectValue />
+					<SelectValue placeholder={isMixed ? t("Mixed") : undefined} />
 				</SelectTrigger>
 				<SelectContent>
 					{param.options.map((option) => (
@@ -131,6 +142,7 @@ function ParamInput({
 	if (param.type === "color") {
 		return (
 			<ColorPicker
+				isMixed={isMixed}
 				value={String(value).replace(/^#/, "").toUpperCase()}
 				onChange={(color) => onPreview(`#${color}`)}
 				onChangeEnd={(color) => {
@@ -144,7 +156,8 @@ function ParamInput({
 	if (param.type === "text") {
 		return (
 			<Textarea
-				value={String(value)}
+				value={isMixed ? "" : String(value)}
+				placeholder={isMixed ? t("Mixed") : undefined}
 				onChange={(event) => onPreview(event.currentTarget.value)}
 				onBlur={onCommit}
 			/>
@@ -155,7 +168,8 @@ function ParamInput({
 		return (
 			<input
 				className="border-input bg-accent h-9 w-full rounded-md border px-3 text-sm outline-none"
-				value={String(value)}
+				value={isMixed ? "" : String(value)}
+				placeholder={isMixed ? t("Mixed") : undefined}
 				onChange={(event) => onPreview(event.currentTarget.value)}
 				onBlur={onCommit}
 			/>
@@ -168,14 +182,17 @@ function ParamInput({
 function NumberParamField({
 	param,
 	value,
+	isMixed,
 	onPreview,
 	onCommit,
 }: {
 	param: NumberParamDefinition;
 	value: number;
+	isMixed: boolean;
 	onPreview: (value: number) => void;
 	onCommit: () => void;
 }) {
+	const { t } = useTranslation();
 	const { min, max, step, displayMultiplier = 1 } = param;
 	const displayValue = value * displayMultiplier;
 	const clampDisplayValue = (nextDisplayValue: number) =>
@@ -194,10 +211,12 @@ function NumberParamField({
 	const maxFractionDigits = getFractionDigitsForStep({ step });
 
 	const draft = usePropertyDraft({
-		displayValue: formatNumberForDisplay({
-			value: displayValue,
-			maxFractionDigits,
-		}),
+		displayValue: isMixed
+			? ""
+			: formatNumberForDisplay({
+					value: displayValue,
+					maxFractionDigits,
+				}),
 		parse: (input) => {
 			const parsed = parseFloat(input);
 			if (Number.isNaN(parsed)) return null;
@@ -216,14 +235,15 @@ function NumberParamField({
 		<NumberField
 			icon={param.shortLabel}
 			value={draft.displayValue}
+			placeholder={isMixed ? t("Mixed") : undefined}
 			dragSensitivity="slow"
-			isDefault={value === param.default}
+			isDefault={isMixed || value === param.default}
 			onFocus={draft.onFocus}
 			onChange={draft.onChange}
 			onBlur={draft.onBlur}
-			onScrub={previewFromDisplay}
+			onScrub={isMixed ? undefined : previewFromDisplay}
 			onScrubEnd={onCommit}
-			onReset={handleReset}
+			onReset={isMixed ? undefined : handleReset}
 		/>
 	);
 }
