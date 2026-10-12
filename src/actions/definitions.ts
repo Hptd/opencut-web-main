@@ -130,6 +130,14 @@ export const ACTIONS = {
 		description: "Toggle bookmark at playhead",
 		category: "timeline",
 	},
+	"previous-bookmark": {
+		description: "Go to previous bookmark",
+		category: "timeline",
+	},
+	"next-bookmark": {
+		description: "Go to next bookmark",
+		category: "timeline",
+	},
 	undo: {
 		description: "Undo",
 		category: "history",
@@ -153,7 +161,7 @@ export const ACTIONS = {
 export type TAction = keyof typeof ACTIONS;
 
 const ACTION_DEFAULT_SHORTCUTS = [
-	["toggle-play", ["space", "k"]],
+	["toggle-play", ["space"]],
 	["seek-forward", ["l"]],
 	["seek-backward", ["j"]],
 	["frame-step-forward", ["right"]],
@@ -162,13 +170,16 @@ const ACTION_DEFAULT_SHORTCUTS = [
 	["jump-backward", ["shift+left"]],
 	["goto-start", ["home", "enter"]],
 	["goto-end", ["end"]],
-	["split", ["s"]],
+	["split", ["k"]],
 	["split-left", ["q"]],
 	["split-right", ["w"]],
 	["delete-selected", ["backspace", "delete"]],
 	["copy-selected", ["ctrl+c"]],
 	["paste-copied", ["ctrl+v"]],
 	["toggle-snapping", ["n"]],
+	["toggle-bookmark", ["m"]],
+	["previous-bookmark", ["alt+shift+m"]],
+	["next-bookmark", ["shift+m"]],
 	["select-all", ["ctrl+a"]],
 	["cancel-interaction", ["escape"]],
 	["duplicate-selected", ["ctrl+d"]],

@@ -179,8 +179,8 @@
 | Duplicate element | 复制片段 | toolbar 180 |
 | Freeze frame (coming soon) | 定格帧（即将推出） | toolbar 188 |
 | Delete element | 删除片段 | toolbar 195 |
-| Add bookmark | 添加书签 | toolbar 207 |
-| Remove bookmark | 删除书签 | toolbar 207 |
+| Add bookmark | 添加标签 | toolbar 207 |
+| Remove bookmark | 删除标签 | toolbar 207 |
 | Open graph editor | 打开曲线编辑器 | graph use-controller 171 |
 | No Scene | 无场景 | toolbar 255 |
 | Auto snapping | 自动吸附 | toolbar 289 |
@@ -240,18 +240,18 @@
 | The selected keyframe could not be resolved. | 无法解析所选关键帧 | session 483 |
 | Selected keyframes must be on the same element. | 所选关键帧必须在同一元素上 | session 495 |
 
-### 8.3 书签（`bookmarks/**`）
+### 8.3 标签（`bookmarks/**`）
 
 | English | 中文建议 | 位置 |
 | --- | --- | --- |
-| Bookmark at {t}s | {t} 秒处书签 | bookmarks 192 |
+| Bookmark at {t}s | {t} 秒处标签 | bookmarks 192 |
 | Note | 备注 | bookmarks 352 |
 | Add a note... | 添加备注… | bookmarks 354 |
 | Color | 颜色 | bookmarks 361 |
 | Reset to default color | 重置为默认颜色 | bookmarks 381 |
 | Duration | 时长 | bookmarks 399 |
-| delete bookmark | 删除书签 | bookmarks 435 |
-| Show bookmark notes | 显示书签备注 | preview-overlay-source 12 |
+| delete bookmark | 删除标签 | bookmarks 435 |
+| Show bookmark notes | 显示标签备注 | preview-overlay-source 12 |
 
 ## 9. 预览（`src/preview/**`）
 
@@ -547,7 +547,7 @@
 | Duplicate selected element | 复制所选元素 | 118 |
 | Mute/unmute selected elements | 静音/取消静音所选 | 122 |
 | Show/hide selected elements | 显示/隐藏所选 | 126 |
-| Toggle bookmark at playhead | 在播放头切换书签 | 130 |
+| Toggle bookmark at playhead | 在播放头切换标签 | 130 |
 | Undo | 撤销 | 134 |
 | Redo | 重做 | 138 |
 | Remove media asset | 移除素材 | 142 |

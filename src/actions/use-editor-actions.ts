@@ -20,6 +20,7 @@ import { getElementsAtTime, hasMediaId } from "@/timeline";
 import { cancelInteraction } from "@/editor/cancel-interaction";
 import { invokeAction } from "@/actions";
 import { canToggleSourceAudio } from "@/timeline/audio-separation";
+import { seekToAdjacentBookmark } from "@/timeline/bookmarks/navigation";
 import {
 	activateScope,
 	clearActiveScope,
@@ -452,6 +453,22 @@ export function useEditorActions() {
 			}
 
 			editor.scenes.toggleBookmark({ time });
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"previous-bookmark",
+		() => {
+			seekToAdjacentBookmark({ editor, direction: "previous" });
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"next-bookmark",
+		() => {
+			seekToAdjacentBookmark({ editor, direction: "next" });
 		},
 		undefined,
 	);

@@ -18,7 +18,12 @@ import { TIMELINE_ZOOM_BUTTON_FACTOR } from "./interaction";
 import { TIMELINE_ZOOM_MAX } from "@/timeline/scale";
 import { sliderToZoom, zoomToSlider } from "@/timeline/zoom-utils";
 import { ScenesView } from "@/components/editor/scenes-view";
-import { type TActionWithOptionalArgs, invokeAction } from "@/actions";
+import {
+	getActionShortcutLabel,
+	type TAction,
+	type TActionWithOptionalArgs,
+	invokeAction,
+} from "@/actions";
 import {
 	canToggleSourceAudio,
 	getSourceAudioActionLabel,
@@ -152,18 +157,21 @@ function ToolbarLeftSection() {
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={ScissorIcon} />}
 					tooltip={t("Split element")}
+					action="split"
 					onClick={({ event }) => handleAction({ action: "split", event })}
 				/>
 
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={AlignLeftIcon} />}
 					tooltip={t("Split left")}
+					action="split-left"
 					onClick={({ event }) => handleAction({ action: "split-left", event })}
 				/>
 
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={AlignRightIcon} />}
 					tooltip={t("Split right")}
+					action="split-right"
 					onClick={({ event }) =>
 						handleAction({ action: "split-right", event })
 					}
@@ -185,6 +193,7 @@ function ToolbarLeftSection() {
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={Copy01Icon} />}
 					tooltip={t("Duplicate element")}
+					action="duplicate-selected"
 					onClick={({ event }) =>
 						handleAction({ action: "duplicate-selected", event })
 					}
@@ -200,6 +209,7 @@ function ToolbarLeftSection() {
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={Delete02Icon} />}
 					tooltip={t("Delete element")}
+					action="delete-selected"
 					onClick={({ event }) =>
 						handleAction({ action: "delete-selected", event })
 					}
@@ -223,6 +233,7 @@ function ToolbarLeftSection() {
 						onClick={({ event }) =>
 							handleAction({ action: "toggle-bookmark", event })
 						}
+						action="toggle-bookmark"
 					/>
 				</Tooltip>
 
@@ -304,6 +315,7 @@ function ToolbarRightSection({
 					icon={<HugeiconsIcon icon={MagnetIcon} />}
 					isActive={snappingEnabled}
 					tooltip={t("Auto snapping")}
+					action="toggle-snapping"
 					onClick={() => toggleSnapping()}
 				/>
 
@@ -353,6 +365,7 @@ function ToolbarButton({
 	onClick,
 	disabled,
 	isActive,
+	action,
 	buttonWrapper,
 }: {
 	icon: React.ReactNode;
@@ -360,8 +373,11 @@ function ToolbarButton({
 	onClick?: ({ event }: { event: React.MouseEvent }) => void;
 	disabled?: boolean;
 	isActive?: boolean;
+	action?: TAction;
 	buttonWrapper?: (button: React.ReactElement) => React.ReactElement;
 }) {
+	const shortcut = action ? getActionShortcutLabel({ action }) : null;
+	const tooltipText = shortcut ? `${tooltip} (${shortcut})` : tooltip;
 	const button = (
 		<Button
 			variant={isActive ? "secondary" : "text"}
@@ -387,7 +403,7 @@ function ToolbarButton({
 	return (
 		<Tooltip delayDuration={200}>
 			<TooltipTrigger asChild>{trigger}</TooltipTrigger>
-			<TooltipContent>{tooltip}</TooltipContent>
+			<TooltipContent>{tooltipText}</TooltipContent>
 		</Tooltip>
 	);
 }

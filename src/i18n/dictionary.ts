@@ -149,8 +149,8 @@ export const zhDictionary: Record<string, string> = {
 	"Duplicate element": "复制片段",
 	"Freeze frame (coming soon)": "定格帧（即将推出）",
 	"Delete element": "删除片段",
-	"Add bookmark": "添加书签",
-	"Remove bookmark": "删除书签",
+	"Add bookmark": "添加标签",
+	"Remove bookmark": "删除标签",
 	"Add element label": "添加元素标签",
 	"Remove element label": "删除元素标签",
 	"Open graph editor": "打开曲线编辑器",
@@ -185,11 +185,13 @@ export const zhDictionary: Record<string, string> = {
 	"Select {track} track": "选择{track}轨道",
 
 	// playback controls
+	Play: "播放",
+	Pause: "暂停",
 	"Go to start": "回到起点",
-	"Previous bookmark": "上一个书签",
+	"Previous bookmark": "上一个标签",
 	"Previous frame": "上一帧",
 	"Next frame": "下一帧",
-	"Next bookmark": "下一个书签",
+	"Next bookmark": "下一个标签",
 	"Go to end": "回到终点",
 
 	// graph editor
@@ -231,7 +233,7 @@ export const zhDictionary: Record<string, string> = {
 	"Add a note...": "添加备注…",
 	Color: "颜色",
 	"Reset to default color": "重置为默认颜色",
-	"Show bookmark notes": "显示书签备注",
+	"Show bookmark notes": "显示标签备注",
 
 	// preview
 	"Failed to copy snapshot": "复制快照失败",
@@ -450,7 +452,9 @@ export const zhDictionary: Record<string, string> = {
 	"Duplicate selected element": "复制所选元素",
 	"Mute/unmute selected elements": "静音/取消静音所选",
 	"Show/hide selected elements": "显示/隐藏所选",
-	"Toggle bookmark at playhead": "在播放头切换书签",
+	"Toggle bookmark at playhead": "在播放头增加标签",
+	"Go to previous bookmark": "跳到上一个标签",
+	"Go to next bookmark": "跳到下一个标签",
 	Undo: "撤销",
 	Redo: "重做",
 	"Remove media asset": "移除素材",
@@ -463,6 +467,7 @@ export const zhDictionary: Record<string, string> = {
 	history: "历史",
 	controls: "控制",
 	assets: "素材",
+	timeline: "时间线",
 
 	// shortcuts dialog
 	"Keyboard shortcuts": "键盘快捷键",

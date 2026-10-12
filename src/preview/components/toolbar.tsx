@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useEditor } from "@/editor/use-editor";
 import { formatTimecode } from "opencut-wasm";
-import { invokeAction } from "@/actions";
+import { getActionShortcutLabel, invokeAction, type TAction } from "@/actions";
 import { EditableTimecode } from "@/components/editable-timecode";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +33,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTranslation } from "@/i18n";
-import { getElementBookmarkAbsoluteTime } from "@/timeline/bookmarks/element-utils";
 import { usePreviewViewport } from "./preview-viewport";
 import { GridPopover } from "./guide-popover";
 import { usePreviewStore } from "@/preview/preview-store";
@@ -145,75 +144,45 @@ function ZoomSelect() {
 }
 
 function TransportControls() {
-	const editor = useEditor();
 	const { t } = useTranslation();
-
-	const seekToAdjacentBookmark = ({
-		direction,
-	}: {
-		direction: "previous" | "next";
-	}) => {
-		const scene = editor.scenes.getActiveScene();
-		const currentTime = editor.playback.getCurrentTime();
-
-		const bookmarkTimes = new Set<MediaTime>();
-		for (const bookmark of scene.bookmarks) {
-			bookmarkTimes.add(bookmark.time);
-		}
-		for (const track of [
-			...scene.tracks.overlay,
-			scene.tracks.main,
-			...scene.tracks.audio,
-		]) {
-			for (const element of track.elements) {
-				for (const bookmark of element.bookmarks ?? []) {
-					bookmarkTimes.add(
-						getElementBookmarkAbsoluteTime({ element, bookmark }),
-					);
-				}
-			}
-		}
-
-		const sortedTimes = [...bookmarkTimes].sort((a, b) => a - b);
-		const target =
-			direction === "previous"
-				? [...sortedTimes].reverse().find((time) => time < currentTime)
-				: sortedTimes.find((time) => time > currentTime);
-		if (target === undefined) return;
-		editor.playback.seek({ time: target });
-	};
 
 	return (
 		<div className="flex items-center gap-1">
 			<TransportButton
 				icon={PreviousIcon}
 				label={t("Go to start")}
+				action="goto-start"
 				onClick={() => invokeAction("goto-start")}
 			/>
 			<TransportButton
 				icon={Bookmark01Icon}
 				label={t("Previous bookmark")}
-				onClick={() => seekToAdjacentBookmark({ direction: "previous" })}
+				action="previous-bookmark"
+				onClick={() => invokeAction("previous-bookmark")}
 			/>
 			<TransportButton
 				icon={ArrowLeftDoubleIcon}
 				label={t("Previous frame")}
+				action="frame-step-backward"
 				onClick={() => invokeAction("frame-step-backward")}
 			/>
 			<PlayPauseButton />
 			<TransportButton
 				icon={ArrowRightDoubleIcon}
 				label={t("Next frame")}
+				action="frame-step-forward"
 				onClick={() => invokeAction("frame-step-forward")}
 			/>
 			<TransportButton
 				icon={Bookmark02Icon}
 				label={t("Next bookmark")}
-				onClick={() => seekToAdjacentBookmark({ direction: "next" })}
+				action="next-bookmark"
+				onClick={() => invokeAction("next-bookmark")}
 			/>
 			<TransportButton
 				icon={NextIcon}
 				label={t("Go to end")}
+				action="goto-end"
 				onClick={() => invokeAction("goto-end")}
 			/>
 		</div>
@@ -223,34 +192,49 @@ function TransportControls() {
 function TransportButton({
 	icon,
 	label,
+	action,
 	onClick,
 }: {
 	icon: IconSvgElement;
 	label: string;
+	action: TAction;
 	onClick: () => void;
 }) {
+	const shortcut = getActionShortcutLabel({ action });
+	const text = shortcut ? `${label} (${shortcut})` : label;
+
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Button variant="text" size="icon" aria-label={label} onClick={onClick}>
+				<Button variant="text" size="icon" aria-label={text} onClick={onClick}>
 					<HugeiconsIcon icon={icon} />
 				</Button>
 			</TooltipTrigger>
-			<TooltipContent>{label}</TooltipContent>
+			<TooltipContent>{text}</TooltipContent>
 		</Tooltip>
 	);
 }
 
 function PlayPauseButton() {
 	const isPlaying = useEditor((e) => e.playback.getIsPlaying());
+	const { t } = useTranslation();
+	const label = isPlaying ? t("Pause") : t("Play");
+	const shortcut = getActionShortcutLabel({ action: "toggle-play" });
+	const text = shortcut ? `${label} (${shortcut})` : label;
 
 	return (
-		<Button
-			variant="text"
-			size="icon"
-			onClick={() => invokeAction("toggle-play")}
-		>
-			<HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
-		</Button>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					variant="text"
+					size="icon"
+					aria-label={text}
+					onClick={() => invokeAction("toggle-play")}
+				>
+					<HugeiconsIcon icon={isPlaying ? PauseIcon : PlayIcon} />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>{text}</TooltipContent>
+		</Tooltip>
 	);
 }
