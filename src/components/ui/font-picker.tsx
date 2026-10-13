@@ -9,12 +9,14 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { loadFullFont } from "@/fonts/google-fonts";
+import { getFontChunkUrl, loadFullFont } from "@/fonts/google-fonts";
 import { SYSTEM_FONTS } from "@/fonts/system-fonts";
+import { useFontsStore } from "@/fonts/fonts-store";
 import type { FontAtlas, FontAtlasEntry } from "@/fonts/types";
 import { useFontAtlas } from "@/fonts/use-font-atlas";
 import { cn } from "@/utils/ui";
-import { ChevronDown, Search } from "lucide-react";
+import { useTranslation } from "@/i18n";
+import { ChevronDown, Search, Star } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { TextIcon } from "@hugeicons/core-free-icons";
 
@@ -35,25 +37,45 @@ const OVERSCAN = 15;
 interface FontPickerProps {
 	defaultValue?: string;
 	onValueChange?: (value: string) => void;
+	placeholder?: string;
 	className?: string;
 }
 
 export function FontPicker({
 	defaultValue,
 	onValueChange,
+	placeholder = "Select a font",
 	className,
 }: FontPickerProps) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const [activeTab, setActiveTab] = useState<FontTab>("all");
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const { atlas, status, fontNames, retry: handleRetry } = useFontAtlas({ open });
+	const favorites = useFontsStore((state) => state.favorites);
+	const recentFonts = useFontsStore((state) => state.recentFonts);
+	const toggleFavorite = useFontsStore((state) => state.toggleFavorite);
+	const addRecentFont = useFontsStore((state) => state.addRecentFont);
+
+	const fontNameSet = useMemo(() => new Set(fontNames), [fontNames]);
+	const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
+
+	const tabFonts = useMemo(() => {
+		if (activeTab === "favorites") {
+			return favorites.filter((name) => fontNameSet.has(name));
+		}
+		if (activeTab === "my-fonts") {
+			return recentFonts.filter((name) => fontNameSet.has(name));
+		}
+		return fontNames;
+	}, [activeTab, favorites, recentFonts, fontNames, fontNameSet]);
 
 	const filteredFonts = useMemo(() => {
-		if (!search) return fontNames;
+		if (!search) return tabFonts;
 		const query = search.toLowerCase();
-		return fontNames.filter((name) => name.toLowerCase().includes(query));
-	}, [fontNames, search]);
+		return tabFonts.filter((name) => name.toLowerCase().includes(query));
+	}, [tabFonts, search]);
 
 	const listHeight = Math.min(
 		MAX_LIST_HEIGHT,
@@ -69,10 +91,11 @@ export function FontPicker({
 					// ignore load failure, font will fall back to system default
 				}
 			}
+			addRecentFont({ family });
 			onValueChange?.(family);
 			setOpen(false);
 		},
-		[onValueChange],
+		[addRecentFont, onValueChange],
 	);
 
 	useEffect(() => {
@@ -83,7 +106,7 @@ export function FontPicker({
 	}, [open]);
 
 	const activeTabLabel =
-		FONT_TABS.find((t) => t.key === activeTab)?.label.toLowerCase() ?? "";
+		FONT_TABS.find((tab) => tab.key === activeTab)?.label.toLowerCase() ?? "";
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -98,7 +121,7 @@ export function FontPicker({
 						<HugeiconsIcon icon={TextIcon} />
 					</span>
 					<span className="truncate" style={{ fontFamily: defaultValue }}>
-						{defaultValue ?? "Select a font"}
+						{defaultValue ?? placeholder}
 					</span>
 				</div>
 				<ChevronDown className="size-3 shrink-0 opacity-50" />
@@ -140,7 +163,7 @@ export function FontPicker({
 							)}
 							onClick={() => setActiveTab(tab.key)}
 						>
-							{tab.label}
+							{t(tab.label)}
 						</button>
 					))}
 				</div>
@@ -163,7 +186,13 @@ export function FontPicker({
 					fontNames.length > 0 &&
 					filteredFonts.length === 0 && (
 						<div className="py-6 text-center text-sm text-muted-foreground">
-							No fonts found.
+							{search
+								? t("No fonts found.")
+								: activeTab === "favorites"
+									? t("No favorites yet.")
+									: activeTab === "my-fonts"
+										? t("No recent fonts yet.")
+										: t("No fonts found.")}
 						</div>
 					)}
 				{status === "idle" && atlas && filteredFonts.length > 0 && (
@@ -176,7 +205,9 @@ export function FontPicker({
 							atlas,
 							filteredFonts,
 							selectedFont: defaultValue,
+							favoriteSet,
 							onFontSelect: handleSelect,
+							onToggleFavorite: toggleFavorite,
 						}}
 						style={{ height: listHeight, width: LIST_WIDTH }}
 					/>
@@ -187,6 +218,7 @@ export function FontPicker({
 }
 
 function FontSpritePreview({ entry }: { entry: FontAtlasEntry }) {
+	const chunkUrl = `url(${getFontChunkUrl(entry.ch)})`;
 	return (
 		<div
 			className="shrink-0"
@@ -194,10 +226,10 @@ function FontSpritePreview({ entry }: { entry: FontAtlasEntry }) {
 				width: entry.w,
 				height: ROW_HEIGHT,
 				backgroundColor: "currentColor",
-				WebkitMaskImage: `url(/fonts/font-chunk-${entry.ch}.avif)`,
+				WebkitMaskImage: chunkUrl,
 				WebkitMaskPosition: `-${entry.x}px -${entry.y}px`,
 				WebkitMaskRepeat: "no-repeat",
-				maskImage: `url(/fonts/font-chunk-${entry.ch}.avif)`,
+				maskImage: chunkUrl,
 				maskPosition: `-${entry.x}px -${entry.y}px`,
 				maskRepeat: "no-repeat",
 				transform: `scale(${PREVIEW_SCALE})`,
@@ -211,7 +243,9 @@ type FontRowProps = {
 	atlas: FontAtlas;
 	filteredFonts: string[];
 	selectedFont: string | undefined;
+	favoriteSet: Set<string>;
 	onFontSelect: (params: { family: string }) => void;
+	onToggleFavorite: (params: { family: string }) => void;
 };
 
 function FontRow({
@@ -220,39 +254,63 @@ function FontRow({
 	atlas,
 	filteredFonts,
 	selectedFont,
+	favoriteSet,
 	onFontSelect,
+	onToggleFavorite,
 }: RowComponentProps<FontRowProps>) {
+	const { t } = useTranslation();
 	const fontName = filteredFonts[index];
 	const entry = atlas.fonts[fontName];
 	const isSelected = fontName === selectedFont;
 	const isSystemFont = SYSTEM_FONTS.has(fontName);
+	const isFavorite = favoriteSet.has(fontName);
 
 	return (
-		<button
-			type="button"
+		<div
 			style={style as CSSProperties}
 			className={cn(
-				"flex w-full cursor-pointer items-center gap-2 px-3 outline-hidden hover:bg-popover-hover",
+				"flex w-full items-stretch hover:bg-popover-hover",
 				isSelected && "bg-popover-hover",
 			)}
-			onClick={() => onFontSelect({ family: fontName })}
-			onKeyDown={(event) => {
-				if (event.key === "Enter" || event.key === " ") {
-					event.preventDefault();
-					onFontSelect({ family: fontName });
-				}
-			}}
-			aria-label={fontName}
 		>
-			<div className="min-w-0 overflow-hidden">
-				{isSystemFont ? (
-					<span className="text-xl text-foreground/85" style={{ fontFamily: fontName }}>
-						{fontName}
-					</span>
-				) : (
-					<FontSpritePreview entry={entry} />
-				)}
-			</div>
-		</button>
+			<button
+				type="button"
+				className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 outline-hidden"
+				onClick={() => onFontSelect({ family: fontName })}
+				onKeyDown={(event) => {
+					if (event.key === "Enter" || event.key === " ") {
+						event.preventDefault();
+						onFontSelect({ family: fontName });
+					}
+				}}
+				aria-label={fontName}
+			>
+				<div className="min-w-0 overflow-hidden">
+					{isSystemFont ? (
+						<span className="text-xl text-foreground/85" style={{ fontFamily: fontName }}>
+							{fontName}
+						</span>
+					) : (
+						<FontSpritePreview entry={entry} />
+					)}
+				</div>
+			</button>
+			<button
+				type="button"
+				className="flex h-full shrink-0 cursor-pointer items-center px-3 outline-hidden"
+				onClick={() => onToggleFavorite({ family: fontName })}
+				aria-label={isFavorite ? t("Remove from favorites") : t("Add to favorites")}
+				aria-pressed={isFavorite}
+			>
+				<Star
+					className={cn(
+						"size-4",
+						isFavorite
+							? "fill-current text-foreground"
+							: "text-muted-foreground",
+					)}
+				/>
+			</button>
+		</div>
 	);
 }

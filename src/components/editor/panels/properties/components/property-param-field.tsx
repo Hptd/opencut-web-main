@@ -24,6 +24,7 @@ import {
 import { usePropertyDraft } from "../hooks/use-property-draft";
 import { KeyframeToggle } from "./keyframe-toggle";
 import { Textarea } from "@/components/ui/textarea";
+import { FontPicker } from "@/components/ui/font-picker";
 import { useTranslation } from "@/i18n";
 
 export function PropertyParamField({
@@ -166,12 +167,14 @@ function ParamInput({
 
 	if (param.type === "font") {
 		return (
-			<input
-				className="border-input bg-accent h-9 w-full rounded-md border px-3 text-sm outline-none"
-				value={isMixed ? "" : String(value)}
-				placeholder={isMixed ? t("Mixed") : undefined}
-				onChange={(event) => onPreview(event.currentTarget.value)}
-				onBlur={onCommit}
+			<FontPicker
+				className="h-9"
+				defaultValue={isMixed ? undefined : String(value)}
+				placeholder={isMixed ? t("Mixed") : t("Select a font")}
+				onValueChange={(font) => {
+					onPreview(font);
+					onCommit();
+				}}
 			/>
 		);
 	}

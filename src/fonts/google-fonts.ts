@@ -14,6 +14,10 @@ function encodeGoogleFontsFamily(family: string): string {
 	return family.replace(/ /g, "+");
 }
 
+export function getFontChunkUrl(chunk: number): string {
+	return `${FONT_CHUNK_PATH_PREFIX}${chunk}.avif`;
+}
+
 export function getCachedFontAtlas(): FontAtlas | null {
 	return cachedAtlas;
 }
@@ -48,7 +52,7 @@ function preloadChunkImages({ atlas }: { atlas: FontAtlas }): void {
 	for (let i = 0; i <= maxChunk; i++) {
 		// hint browser to preload chunk images without blocking
 		const img = new Image();
-		img.src = `${FONT_CHUNK_PATH_PREFIX}${i}.avif`;
+		img.src = getFontChunkUrl(i);
 	}
 }
 
