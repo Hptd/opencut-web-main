@@ -156,11 +156,11 @@ function ParamInput({
 
 	if (param.type === "text") {
 		return (
-			<Textarea
-				value={isMixed ? "" : String(value)}
-				placeholder={isMixed ? t("Mixed") : undefined}
-				onChange={(event) => onPreview(event.currentTarget.value)}
-				onBlur={onCommit}
+			<TextParamField
+				value={typeof value === "string" ? value : String(value)}
+				isMixed={isMixed}
+				onPreview={onPreview}
+				onCommit={onCommit}
 			/>
 		);
 	}
@@ -180,6 +180,37 @@ function ParamInput({
 	}
 
 	return null;
+}
+
+function TextParamField({
+	value,
+	isMixed,
+	onPreview,
+	onCommit,
+}: {
+	value: string;
+	isMixed: boolean;
+	onPreview: (value: string) => void;
+	onCommit: () => void;
+}) {
+	const { t } = useTranslation();
+	const draft = usePropertyDraft({
+		displayValue: isMixed ? "" : value,
+		parse: (input) => input,
+		supportsExpressions: false,
+		onPreview,
+		onCommit,
+	});
+
+	return (
+		<Textarea
+			value={draft.displayValue}
+			placeholder={isMixed ? t("Mixed") : undefined}
+			onFocus={draft.onFocus}
+			onChange={draft.onChange}
+			onBlur={draft.onBlur}
+		/>
+	);
 }
 
 function NumberParamField({

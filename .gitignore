@@ -43,3 +43,6 @@ yarn-error.log*
 .cursorignore
 docs/交付上海开发功能文档.docx
 docs/交付上海开发功能文档.pdf
+
+
+/rust/target
